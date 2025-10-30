@@ -1,65 +1,196 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
 
 export default function Home() {
+  const [textPrompt, setTextPrompt] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gemini');
+  const [textResponse, setTextResponse] = useState('...');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [textLoading, setTextLoading] = useState(false);
+  const [textError, setTextError] = useState('');
+
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageSrc, setImageSrc] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState('');
+
+  // Configurações da API (usando variáveis de ambiente)
+  const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+  const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'my-super-secret-key'; // Substitua pela sua chave real
+
+  const handleTextSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!textPrompt.trim()) return;
+
+    setTextLoading(true);
+    setTextError('');
+    setTextResponse('Gerando resposta...');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': API_KEY,
+        },
+        body: JSON.stringify({
+          prompt: textPrompt,
+          model: selectedModel,
+          session_id: sessionId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Ocorreu um erro desconhecido.');
+      }
+
+      setTextResponse(data.result);
+      setSessionId(data.session_id);
+    } catch (error: any) {
+      console.error('Erro na geração de texto:', error);
+      setTextError(`Erro: ${error.message}`);
+      setTextResponse('...');
+    } finally {
+      setTextLoading(false);
+      setTextPrompt('');
+    }
+  };
+
+  const handleImageSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!imagePrompt.trim()) return;
+
+    setImageLoading(true);
+    setImageError('');
+    setImageSrc('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': API_KEY,
+        },
+        body: JSON.stringify({ prompt: imagePrompt }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Ocorreu um erro desconhecido.');
+      }
+
+      // A API retorna um caminho como /generated_images/image.png
+      // Usamos a URL base para construir o caminho completo
+      setImageSrc(`${API_BASE_URL}${data.image_path}`);
+    } catch (error: any) {
+      console.error('Erro na geração de imagem:', error);
+      setImageError(`Erro: ${error.message}`);
+    } finally {
+      setImageLoading(false);
+      setImagePrompt('');
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 px-4">
+      <h1 className="text-4xl font-bold text-gray-800 mb-8">AI Service Frontend</h1>
+
+      {/* Seção de Geração de Texto */}
+      <section className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl mb-10">
+        <h2 className="text-2xl font-semibold text-gray-700 mb-6">Geração de Texto</h2>
+        <form onSubmit={handleTextSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="model-select" className="block text-gray-700 text-sm font-bold mb-2">
+              Escolha o Modelo:
+            </label>
+            <select
+              id="model-select"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={textLoading}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              <option value="gemini">Gemini (gemini-1.5-flash-latest)</option>
+              <option value="codellama">Ollama: Code Llama</option>
+              <option value="gemma">Ollama: Gemma</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="text-prompt" className="block text-gray-700 text-sm font-bold mb-2">
+              Prompt para Texto:
+            </label>
+            <input
+              type="text"
+              id="text-prompt"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Digite seu prompt aqui..."
+              value={textPrompt}
+              onChange={(e) => setTextPrompt(e.target.value)}
+              disabled={textLoading}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+            disabled={textLoading}
           >
-            Documentation
-          </a>
+            {textLoading ? 'Enviando...' : 'Enviar'}
+          </button>
+        </form>
+
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Resposta da IA:</h3>
+          <p className="text-gray-800 whitespace-pre-wrap">{textResponse}</p>
+          {sessionId && (
+            <p className="text-sm text-gray-600 mt-2">
+              <strong>ID da Sessão:</strong> {sessionId}
+            </p>
+          )}
+          {textError && <p className="text-red-500 text-sm mt-2">{textError}</p>}
         </div>
-      </main>
+      </section>
+
+      {/* Seção de Geração de Imagem */}
+      <section className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
+        <h2 className="text-2xl font-semibold text-gray-700 mb-6">Geração de Imagem</h2>
+        <form onSubmit={handleImageSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="image-prompt" className="block text-gray-700 text-sm font-bold mb-2">
+              Prompt para Imagem:
+            </label>
+            <input
+              type="text"
+              id="image-prompt"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Descreva a imagem que deseja gerar..."
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              disabled={imageLoading}
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+            disabled={imageLoading}
+          >
+            {imageLoading ? 'Gerando...' : 'Gerar Imagem'}
+          </button>
+        </form>
+
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded text-center">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Imagem Gerada:</h3>
+          {imageLoading && <p>Gerando imagem...</p>}
+          {imageSrc && !imageLoading && (
+            <img src={imageSrc} alt="Imagem Gerada" className="max-w-full h-auto rounded-md mt-4" />
+          )}
+          {imageError && <p className="text-red-500 text-sm mt-2">{imageError}</p>}
+        </div>
+      </section>
     </div>
   );
 }
+
