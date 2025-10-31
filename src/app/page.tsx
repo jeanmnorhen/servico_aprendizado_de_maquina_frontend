@@ -15,7 +15,7 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState('');
 
-  // Configurações da API (usando variáveis de ambiente)
+  // Configurações da API (usando variáveis de ambiente).
   const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'my-super-secret-key'; // Substitua pela sua chave real
 
