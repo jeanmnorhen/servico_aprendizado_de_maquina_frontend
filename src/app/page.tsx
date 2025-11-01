@@ -116,7 +116,7 @@ export default function Home() {
             >
               <option value="gemini">Gemini (gemini-1.5-flash-latest)</option>
               <option value="codellama">Ollama: Code Llama</option>
-              <option value="gemma">Ollama: Gemma</option>
+              <option value="gemma:2b">Ollama: Gemma</option>
             </select>
           </div>
           <div>
